@@ -1,0 +1,166 @@
+using UnityEngine;
+using System.Collections.Generic;
+using UnityEditor; //for the editor quit application logic
+
+public class HealthCalculator : MonoBehaviour
+{
+    //Inspector
+    [Header("Your Character, Use all caps for race and class!")]
+    public int constitution;//use
+    public int level;//use
+    public string race;//key
+    public string Name;//for printing, class reserved
+    public string Class; //key, class reserved
+
+    [Header("Feats")] //use in final calculations
+    public bool stout;
+    public bool tough;
+
+    [Header("Health")] //use to determine final calculation method
+    public bool averaged;
+    public bool rolled;
+    
+    //dictionary of dictionaries
+    Dictionary <string,Dictionary<string,int>> Data = new Dictionary < string,Dictionary<string,int>>
+    {
+        {
+            "Races", new Dictionary<string,int>
+                {
+                    {"DRAGONBORN", 0},
+                    {"DWARF",      2},
+                    {"ELF",        0},
+                    {"GNOME",      0},
+                    {"GOLIATH",    1},
+                    {"HALFLING",   0},
+                    {"HUMAN",      0},
+                    {"ORC",        1},
+                    {"TIEFLING",   0}
+                }
+        },
+        {
+            "Classes", new Dictionary<string,int>
+                {
+                    {"ARTIFICER",  8},
+                    {"BARBARIAN", 12},
+                    {"BARD",       8},
+                    {"CLERIC",     8},
+                    {"DRUID",      8},
+                    {"FIGHTER",   10},
+                    {"MONK",       8},
+                    {"RANGER",    10},
+                    {"ROGUE",      8},
+                    {"PALADIN",   10},
+                    {"SORCERER",   6},
+                    {"WIZARD",     6},
+                    {"WARLOCK",    8}
+                }
+        }
+    };
+
+ //Data["key1"]["key2"]
+
+    private int ConstitutionCalc(int constitution)
+    {
+        if(constitution < 12)
+        {
+            return 0;
+        }
+        else if(constitution <= 13)
+        {
+            return 1;
+        }
+        else if(constitution <= 15)
+        {
+            return 2;
+        }
+        else if(constitution <= 17)
+        {
+            return 3;
+        }
+        else 
+        {
+            return 4;
+        }
+    }
+
+    public int Calculator(bool Averaged,bool Stout, bool Tough, string Class, string Race, int Level, int constitution) //calculator function
+    {
+        //intializing values for calculation
+        int stoutnum = 0;
+        int toughnum = 0;
+        int hp;
+
+        if(Tough) //if true
+        {
+            toughnum = 2; //add to calculations
+        }
+        if(Stout) //if true
+        {
+            stoutnum = 1; //add to calculations
+        }
+
+        if (Averaged)
+        {
+            return hp = (Data["Classes"][Class]/2 + 1) + (Data["Races"][Race]*Level) + Level + (toughnum*Level)+ (stoutnum*Level) + ConstitutionCalc(constitution); 
+            //averaged and all other stuff is added, uses +1 instead of 0.5 because DND rounds up anyways
+        }
+
+        else //rolled
+        {
+            return hp = Random.Range(1,Data["Classes"][Class]) + (Data["Races"][Race]*Level) + Level + (toughnum*Level)+ (stoutnum*Level)+ConstitutionCalc(constitution); 
+            //randomized and added
+        }
+    }
+
+
+ 
+    void Start()
+    {
+        if(!Data["Races"].ContainsKey(race)||!Data["Classes"].ContainsKey(Class)) // if the chosen class or race doesnt work, or is not all caps
+        {
+            Debug.Log("Please use a valid Class or Race, and use ALL CAPS");
+            UnityEditor.EditorApplication.isPlaying = false;
+            return;
+        }
+        if(averaged && rolled ) //if they select both health options
+        {
+            Debug.Log("Please pick averaged OR rolled.");
+            UnityEditor.EditorApplication.isPlaying = false;
+            return;
+        }
+        if(level > 20) //max dnd level is 20 (I think?)
+        {
+           Debug.Log("Max level is 20!");
+            UnityEditor.EditorApplication.isPlaying = false; 
+            return;
+        }
+
+        int hitpoints = Calculator(averaged,stout,tough,Class,race,level,constitution);
+
+        //Stout or Tough logic, couldve been a function
+        string Has = "does not have";
+        string Stough = "stout or tough";
+        if(stout || tough)
+        {       
+            Has = "has"; //if either 
+            if(stout && tough) //if both
+            {
+                Has = "has both";
+                Stough = "Stout and Tough";
+            }
+
+            else if(stout) //if not both
+            {
+                Stough = "stout";
+            }
+            
+            else //if not stout
+            {
+                Stough = "tough";
+            }
+        }
+        //using string interpolation to print
+       Debug.Log( $"your character,{Name} ,a level {level} {race} {Class} with a CON score of {constitution} and {Has} {Stough} has {hitpoints} hitpoints.");
+    }
+
+}
